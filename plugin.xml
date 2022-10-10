@@ -11,9 +11,6 @@
         <merges target="cordova.plugins.NotificarePush" />
     </js-module>
 
-
-    <dependency id="cordova-outsystems-firebase-core" url="https://github.com/OutSystems/cordova-outsystems-firebase-core.git#1.0.1" />
-
     <!--asset src="build/notificare-push.bundle.js.map" target="plugins/notificare-push/build/notificare-push.bundle.js.map" /-->
 
     <platform name="android">
@@ -92,7 +89,7 @@
                 <source url="https://github.com/CocoaPods/Specs.git" />
             </config>
             <pods use-frameworks="true">
-                <pod name="Notificare/NotificarePushKit" spec="3.4.0-beta.2" />
+                <pod name="Notificare/NotificarePushKit" spec="3.3.0" />
             </pods>
         </podspec>
     </platform>
