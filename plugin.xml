@@ -15,7 +15,7 @@
 
     <platform name="android">
 
-		<hook type="after_prepare" src="hooks/remove_config_googleServices.js"/>
+		//<hook type="after_prepare" src="hooks/remove_config_googleServices.js"/>
 
         <config-file target="config.xml" parent="/*">
             <preference name="AndroidXEnabled" value="true" />
