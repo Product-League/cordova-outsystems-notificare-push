@@ -1,6 +1,6 @@
 {
   "name": "cordova-plugin-notificare-push",
-  "version": "3.4.0-beta.2",
+  "version": "3.5.0",
   "description": "Notificare Push Cordova Plugin.",
   "author": "Notificare <info@notifica.re> (https://notificare.com)",
   "license": "MIT",
@@ -18,10 +18,10 @@
     "cordova-ios"
   ],
   "dependencies": {
-    "cordova-plugin-notificare": "^3.0.0"
+    "cordova-plugin-notificare": "3.5.0"
   },
   "devDependencies": {
-    "cordova-plugin-notificare": "^3.0.0"
+    "cordova-plugin-notificare": "3.5.0"
   },
   "cordova": {
     "id": "cordova-plugin-notificare-push",
