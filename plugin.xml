@@ -24,7 +24,7 @@
             <preference name="GradlePluginKotlinVersion" value="1.6.21" />
 
             <preference name="GradlePluginGoogleServicesEnabled" value="true" />
-            <preference name="GradlePluginGoogleServicesVersion" value="4.3.15" />
+            <preference name="GradlePluginGoogleServicesVersion" value="4.3.14" />
         </config-file>
 
         <config-file target="res/xml/config.xml" parent="/widget">
