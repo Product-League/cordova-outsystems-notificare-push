@@ -11,7 +11,7 @@ class NotificarePushPlugin : CDVPlugin {
     }
 
     @objc func registerListener(_ command: CDVInvokedUrlCommand) {
-        NotificarePushPluginEventBroker.startListening { event in
+        NotificarePushPluginEventBroker.startListening(settings: commandDelegate.settings) { event in
             var payload: [String: Any] = [
                 "name": event.name,
             ]
@@ -179,6 +179,82 @@ class NotificarePushPlugin : CDVPlugin {
         let result = CDVPluginResult(status: .ok)
         self.commandDelegate!.send(result, callbackId: command.callbackId)
     }
+
+    @objc func checkPermissionStatus(_ command: CDVInvokedUrlCommand) {
+        checkPermissionStatus { status in
+            let result = CDVPluginResult(status: .ok, messageAs: status.rawValue)
+            self.commandDelegate!.send(result, callbackId: command.callbackId)
+        }
+    }
+
+    @objc func shouldShowPermissionRationale(_ command: CDVInvokedUrlCommand) {
+        let result = CDVPluginResult(status: .ok, messageAs: false)
+        self.commandDelegate!.send(result, callbackId: command.callbackId)
+    }
+
+    @objc func presentPermissionRationale(_ command: CDVInvokedUrlCommand) {
+        let result = CDVPluginResult(status: .error, messageAs: "This method is not implemented in iOS.")
+        self.commandDelegate!.send(result, callbackId: command.callbackId)
+    }
+
+    @objc func requestPermission(_ command: CDVInvokedUrlCommand) {
+        checkPermissionStatus { status in
+            guard status != .granted && status != .permanentlyDenied else {
+                let result = CDVPluginResult(status: .ok, messageAs: status.rawValue)
+                self.commandDelegate!.send(result, callbackId: command.callbackId)
+                return
+            }
+
+            let authorizationOptions = Notificare.shared.push().authorizationOptions
+
+            UNUserNotificationCenter.current().requestAuthorization(options: authorizationOptions) { (granted, error) in
+                if error == nil {
+                    let result = CDVPluginResult(status: .ok, messageAs: granted ? ["result": PermissionStatus.granted.rawValue] : ["result": PermissionStatus.denied.rawValue])
+                    self.commandDelegate!.send(result, callbackId: command.callbackId)
+                    return
+                }
+
+                let result = CDVPluginResult(status: .error, messageAs: "Unable to request notifications permission.")
+                self.commandDelegate!.send(result, callbackId: command.callbackId)
+            }
+        }
+    }
+
+    @objc func openAppSettings(_ command: CDVInvokedUrlCommand) {
+        DispatchQueue.main.async {
+            guard let url = URL(string: UIApplication.openSettingsURLString), UIApplication.shared.canOpenURL(url) else {
+                let result = CDVPluginResult(status: .error, messageAs: "Unable to open the application settings.")
+                self.commandDelegate!.send(result, callbackId: command.callbackId)
+                return
+            }
+
+            UIApplication.shared.open(url) { success in
+                if success {
+                    let result = CDVPluginResult(status: .ok)
+                    self.commandDelegate!.send(result, callbackId: command.callbackId)
+                } else {
+                    let result = CDVPluginResult(status: .error, messageAs: "Unable to open the application settings.")
+                    self.commandDelegate!.send(result, callbackId: command.callbackId)
+                }
+            }
+        }
+    }
+
+    private func checkPermissionStatus(_ completion: @escaping (PermissionStatus) -> Void) {
+        UNUserNotificationCenter.current().getNotificationSettings { status in
+            var permissionStatus = PermissionStatus.denied
+
+            if status.authorizationStatus == .authorized {
+                permissionStatus = PermissionStatus.granted
+            }
+
+            if status.authorizationStatus == .denied {
+                permissionStatus = PermissionStatus.permanentlyDenied
+            }
+
+            completion(permissionStatus)
+        }
+    }
 }
 
 extension NotificarePushPlugin: NotificarePushDelegate {
@@ -190,6 +266,22 @@ extension NotificarePushPlugin: NotificarePushDelegate {
             )
         } catch {
             NotificareLogger.error("Failed to emit the notification_received event.", error: error)
+        }
+    }
+
+    func notificare(_ notificarePush: NotificarePush, didReceiveNotification notification: NotificareNotification, deliveryMechanism: NotificareNotificationDeliveryMechanism) {
+        do {
+            let payload: [String: Any] = [
+                "notification": try notification.toJson(),
+                "deliveryMechanism": deliveryMechanism.rawValue,
+            ]
+
+            NotificarePushPluginEventBroker.dispatchEvent(
+                name: "notification_info_received",
+                payload: payload
+            )
+        } catch {
+            NotificareLogger.error("Failed to emit the notification_info_received event.", error: error)
         }
     }
 
@@ -300,5 +392,13 @@ extension NotificarePushPlugin: NotificarePushDelegate {
             name: "failed_to_register_for_remote_notifications",
             payload: error.localizedDescription
         )
+    }
+}
+
+extension NotificarePushPlugin {
+    internal enum PermissionStatus: String, CaseIterable {
+        case denied = "denied"
+        case granted = "granted"
+        case permanentlyDenied = "permanently_denied"
     }
 }

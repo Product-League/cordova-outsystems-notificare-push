@@ -5,18 +5,34 @@ import org.json.JSONObject
 import re.notifica.internal.NotificareLogger
 import re.notifica.models.NotificareNotification
 import re.notifica.push.NotificarePushIntentReceiver
+import re.notifica.push.models.NotificareNotificationDeliveryMechanism
 import re.notifica.push.models.NotificareSystemNotification
 import re.notifica.push.models.NotificareUnknownNotification
 
 class NotificarePushPluginReceiver : NotificarePushIntentReceiver() {
 
-    override fun onNotificationReceived(context: Context, notification: NotificareNotification) {
-        try {
-            NotificarePushPluginEventBroker.dispatchEvent("notification_received", notification.toJson())
-        } catch (e: Exception) {
-            NotificareLogger.error("Failed to emit the notification_received event.", e)
+        override fun onNotificationReceived(
+            context: Context,
+            notification: NotificareNotification,
+            deliveryMechanism: NotificareNotificationDeliveryMechanism
+        ) {
+            // Continue emitting the legacy event to preserve backwards compatibility.
+            try {
+                NotificarePushPluginEventBroker.dispatchEvent("notification_received", notification.toJson())
+            } catch (e: Exception) {
+                NotificareLogger.error("Failed to emit the notification_received event.", e)
+            }
+
+            try {
+                val json = JSONObject()
+                json.put("notification", notification.toJson())
+                json.put("deliveryMechanism", deliveryMechanism.rawValue)
+
+                NotificarePushPluginEventBroker.dispatchEvent("notification_info_received", json)
+            } catch (e: Exception) {
+                NotificareLogger.error("Failed to emit the notification_info_received event.", e)
+            }
         }
-    }
 
     override fun onSystemNotificationReceived(context: Context, notification: NotificareSystemNotification) {
         try {
